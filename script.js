@@ -94,8 +94,17 @@ class PixelReveal {
         this.x = x;
         this.y = y;
         this.scale = 0;
-        this.img = new Image();
-        this.img.src = "happy.png";
+
+        // Mảng chứa 15 hình ảnh (anh1.jpg đến anh15.jpg)
+        this.images = [];
+        for (let i = 1; i <= 15; i++) {
+            let img = new Image();
+            img.src = `images/anh${i}.jpg`;  // Đường dẫn đến các hình ảnh
+            this.images.push(img);
+        }
+
+        // Chọn ngẫu nhiên 1 hình ảnh
+        this.img = this.images[Math.floor(Math.random() * this.images.length)];
     }
 
     update() {
