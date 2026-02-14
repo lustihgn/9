@@ -1,119 +1,181 @@
-// Lấy tất cả các trụ pháo
-const launchers = document.querySelectorAll('.launcher');
-let nextIndex = 3; // Trụ tiếp theo sẽ xuất hiện
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-// Gắn sự kiện click vào toàn bộ màn hình
-document.body.addEventListener("click", function(event) {
-  // Kiểm tra nếu còn trụ pháo nào chưa bắn thì bắn từ trụ đó
-  if (nextIndex >= launchers.length) return;
-
-  // Lấy trụ pháo đầu tiên còn lại
-  const launcher = launchers[nextIndex];
-  launchFirework(launcher);
-  swapLauncher();
-});
-
-// Bắn pháo từ trụ
-function launchFirework(launcher) {
-  const firework = document.createElement("div");
-  firework.className = "firework";
-
-  // Lấy vị trí của trụ pháo trên màn hình
-  const rect = launcher.getBoundingClientRect();
-  const x = rect.left + rect.width / 2;
-  const y = rect.top + rect.height; // Pháo hoa sẽ bắt đầu từ trụ
-
-  firework.style.left = `${x - 4}px`;  // Căn chỉnh pháo hoa tại vị trí trụ
-  firework.style.bottom = '80px'; // Pháo bắn lên từ dưới
-
-  document.body.appendChild(firework);
-
-  // Hiệu ứng pháo bay lên từ trụ
-  firework.animate(
-    [
-      { transform: 'translateY(0)', opacity: 1 },
-      { transform: 'translateY(-400px)', opacity: 1 }
-    ],
-    { duration: 800, easing: 'ease-out' }
-  );
-
-  // Hiển thị ảnh sau khi pháo nổ
-  setTimeout(() => {
-    firework.remove();
-    explode(x, y); // Nổ tại trụ mà không bay ra ngoài viền màn hình
-    showImage(x, y, launcher.dataset.img);
-  }, 800);
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
+resize();
+window.addEventListener("resize", resize);
 
-// Hiệu ứng nổ pháo
-function explode(x, y) {
-  const sky = document.createElement("div");
-  sky.className = "sky-flash";
-  document.body.appendChild(sky);
-  setTimeout(() => sky.remove(), 600);
+// ⭐ Sao nền
+const stars = Array.from({ length: 120 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2
+}));
 
-  const colors = ["#ff3c3c", "#ffd93c", "#4ef037", "#3cf0ff", "#ff3cf0"];
+// 🚀 Pháo bay
+class Firework {
+    constructor(x) {
+        this.x = x;
+        this.y = canvas.height;
+        this.vy = 9;
+        this.targetY = Math.random() * canvas.height * 0.4 + 100;
+        this.trail = [];
+        this.exploded = false;
+    }
 
-  // Tạo các hạt nổ phát tán từ trụ mà không ra ngoài
-  for (let i = 0; i < 80; i++) {
-    const particle = document.createElement("div");
-    particle.className = "sparkle";
-    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.left = `${x + Math.random() * 20 - 10}px`; // tạo vị trí ngẫu nhiên x trong phạm vi trụ
-    particle.style.top = `${y + Math.random() * 20 - 10}px`;  // tạo vị trí ngẫu nhiên y trong phạm vi trụ
+    update() {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 12) this.trail.shift();
 
-    document.body.appendChild(particle);
+        this.y -= this.vy;
 
-    const angle = Math.random() * 2 * Math.PI;
-    const distance = Math.random() * 150; // Giới hạn khoảng cách nổ trong phạm vi màn hình
-
-    particle.animate(
-      [
-        { transform: "translate(0,0)", opacity: 1 },
-        {
-          transform: `translate(${Math.cos(angle) * distance}px,
-                                 ${Math.sin(angle) * distance}px)`,
-          opacity: 0
+        if (this.y <= this.targetY) {
+            this.exploded = true;
+            explode(this.x, this.y);
+            reveals.push(new PixelReveal(this.x, this.y));
         }
-      ],
-      { duration: 1000, easing: "ease-out" }
-    );
+    }
 
-    setTimeout(() => particle.remove(), 1000);
-  }
+    draw() {
+        ctx.strokeStyle = "rgba(255,255,255,0.6)";
+        ctx.beginPath();
+        this.trail.forEach((p, i) => {
+            if (i === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
-// Hiển thị ảnh sau khi pháo nổ
-function showImage(x, y, src) {
-  const img = document.createElement("img");
-  img.src = src;
-  img.className = "popup-image";
+// 💥 Hạt pháo
+class Particle {
+    constructor(x, y) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 6 + 2;
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 60;
+    }
 
-  img.style.left = x - 75 + "px";
-  img.style.top = y + "px";
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.05;
+        this.life--;
+    }
 
-  document.body.appendChild(img);
-
-  // Đảm bảo ảnh từ từ hiện lên và lan rộng từ trung tâm
-  setTimeout(() => {
-    img.style.opacity = 1;
-    img.style.transform = "scale(1)";
-  }, 800);
-
-  // Biến mất ảnh sau vài giây
-  setTimeout(() => {
-    img.style.opacity = 0;
-    setTimeout(() => img.remove(), 500);
-  }, 5000);
+    draw() {
+        ctx.fillStyle = `rgba(255,${Math.random()*200},0,${this.life/60})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
-// Đổi trụ pháo
-function swapLauncher() {
-  if (nextIndex >= launchers.length) return;
-
-  launchers[nextIndex].classList.remove('active');
-  nextIndex++;
-  if (nextIndex < launchers.length) {
-    launchers[nextIndex].classList.add('active');
-  }
+function explode(x, y) {
+    for (let i = 0; i < 80; i++) {
+        particles.push(new Particle(x, y));
+    }
 }
+
+// 🖼️ Hiện ảnh từ tâm (pixel)
+class PixelReveal {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.scale = 0;
+        this.img = new Image();
+        this.img.src = "happy.png";
+    }
+
+    update() {
+        if (this.scale < 1) this.scale += 0.02;
+    }
+
+    draw() {
+        const size = 220 * this.scale;
+        const pixel = 8;
+
+        ctx.save();
+        ctx.translate(this.x - size / 2, this.y - size / 2);
+
+        for (let i = 0; i < size; i += pixel) {
+            for (let j = 0; j < size; j += pixel) {
+                const dx = i - size / 2;
+                const dy = j - size / 2;
+                if (Math.sqrt(dx * dx + dy * dy) < size / 2) {
+                    ctx.drawImage(
+                        this.img,
+                        (i / size) * this.img.width,
+                        (j / size) * this.img.height,
+                        pixel,
+                        pixel,
+                        i,
+                        j,
+                        pixel,
+                        pixel
+                    );
+                }
+            }
+        }
+        ctx.restore();
+    }
+}
+
+// 🔁 Quản lý
+const fireworks = [];
+const particles = [];
+const reveals = [];
+
+function animate() {
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Vẽ sao
+    ctx.fillStyle = "#fff";
+    stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    fireworks.forEach((f, i) => {
+        f.update();
+        f.draw();
+        if (f.exploded) fireworks.splice(i, 1);
+    });
+
+    particles.forEach((p, i) => {
+        p.update();
+        p.draw();
+        if (p.life <= 0) particles.splice(i, 1);
+    });
+
+    reveals.forEach(r => {
+        r.update();
+        r.draw();
+    });
+
+    requestAnimationFrame(animate);
+}
+animate();
+
+// 🖱️ Click bắn pháo
+window.addEventListener("click", () => {
+    const xs = [
+        canvas.width * 0.2,
+        canvas.width * 0.5,
+        canvas.width * 0.8
+    ];
+    fireworks.push(new Firework(xs[Math.floor(Math.random() * xs.length)]));
+});
