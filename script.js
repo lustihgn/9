@@ -16,83 +16,45 @@ const stars = Array.from({ length: 120 }, () => ({
     r: Math.random() * 2
 }));
 
-// 🚀 Pháo bay
+// 🚀 Pháo hoa
 class Firework {
     constructor(x) {
         this.x = x;
         this.y = canvas.height;
-        this.vy = 9;
-        this.targetY = Math.random() * canvas.height * 0.4 + 100;
-        this.trail = [];
+        this.vx = Math.random() * 4 - 2; // Tạo sự lan tỏa (di chuyển ngang)
+        this.vy = Math.random() * -6 - 4; // Tạo sự di chuyển lên trên với vận tốc ngẫu nhiên
         this.exploded = false;
+        this.life = 100; // Độ sống của pháo hoa
     }
 
     update() {
-        this.trail.push({ x: this.x, y: this.y });
-        if (this.trail.length > 12) this.trail.shift();
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.1; // Thêm trọng lực
 
-        this.y -= this.vy;
+        this.life--; // Giảm dần đời sống pháo hoa
 
-        if (this.y <= this.targetY) {
+        if (this.life <= 0) {
             this.exploded = true;
             explode(this.x, this.y);
         }
     }
 
     draw() {
-        ctx.strokeStyle = "rgba(255,255,255,0.6)";
-        ctx.beginPath();
-        this.trail.forEach((p, i) => {
-            if (i === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-        });
-        ctx.stroke();
-
+        if (this.exploded) return; // Không vẽ nếu đã nổ
         ctx.fillStyle = "#fff";
         ctx.beginPath();
-        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// 💥 Hạt pháo
-class Particle {
-    constructor(x, y) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 6 + 2;
-        this.x = x;
-        this.y = y;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.life = 60;
-    }
-
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += 0.05;
-        this.life--;
-    }
-
-    draw() {
-        ctx.fillStyle = `rgba(255, ${Math.random() * 255}, ${Math.random() * 255}, ${this.life / 60})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
         ctx.fill();
     }
 }
 
 function explode(x, y) {
-    const numParticles = 50; // Giảm số lượng hạt để cải thiện hiệu suất
-    for (let i = 0; i < numParticles; i++) {
-        particles.push(new Particle(x, y));
-    }
-
     // Hiển thị ảnh khi pháo hoa nổ
     reveals.push(new PixelReveal(x, y));
 }
 
-// 🖼️ Hiển thị ảnh sau khi pháo hoa nổ
+// 🖼️ Hiển thị ảnh khi pháo hoa nổ
 class PixelReveal {
     constructor(x, y) {
         this.x = x;
@@ -117,37 +79,17 @@ class PixelReveal {
         if (!this.img) return; // Nếu ảnh chưa tải xong thì không vẽ
 
         const size = 220 * this.scale;
-        const pixel = 8;
 
         ctx.save();
         ctx.translate(this.x - size / 2, this.y - size / 2);
 
-        for (let i = 0; i < size; i += pixel) {
-            for (let j = 0; j < size; j += pixel) {
-                const dx = i - size / 2;
-                const dy = j - size / 2;
-                if (Math.sqrt(dx * dx + dy * dy) < size / 2) {
-                    ctx.drawImage(
-                        this.img,
-                        (i / size) * this.img.width,
-                        (j / size) * this.img.height,
-                        pixel,
-                        pixel,
-                        i,
-                        j,
-                        pixel,
-                        pixel
-                    );
-                }
-            }
-        }
+        ctx.drawImage(this.img, 0, 0, this.img.width, this.img.height, 0, 0, size, size);
         ctx.restore();
     }
 }
 
 // 🔁 Quản lý
 const fireworks = [];
-const particles = [];
 const reveals = [];
 
 // Vẽ các hiệu ứng lên canvas
@@ -166,16 +108,8 @@ function animate() {
     fireworks.forEach((f, i) => {
         f.update();
         f.draw();
-        if (f.exploded && f.trail.length === 0) {
+        if (f.exploded) {
             fireworks.splice(i, 1); // Xóa pháo hoa khi đã nổ xong
-        }
-    });
-
-    particles.forEach((p, i) => {
-        p.update();
-        p.draw();
-        if (p.life <= 0) {
-            particles.splice(i, 1); // Xóa hạt khi hết đời
         }
     });
 
