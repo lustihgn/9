@@ -18,20 +18,21 @@ function launchFirework(launcher) {
   const firework = document.createElement("div");
   firework.className = "firework";
 
-  // Tạo vị trí ngẫu nhiên cho pháo hoa trên màn hình
-  const x = Math.random() * window.innerWidth;
-  const y = window.innerHeight - 80; // Pháo hoa sẽ xuất hiện ở dưới gần đáy
+  // Lấy vị trí của trụ pháo trên màn hình
+  const rect = launcher.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height; // Pháo hoa sẽ bắt đầu từ trụ
 
-  firework.style.left = x + "px";
+  firework.style.left = `${x - 4}px`;  // Căn chỉnh pháo hoa tại vị trí trụ
   firework.style.bottom = '80px'; // Pháo bắn lên từ dưới
 
   document.body.appendChild(firework);
 
-  // Hiệu ứng pháo bay lên ngẫu nhiên
+  // Hiệu ứng pháo bay lên từ trụ
   firework.animate(
     [
       { transform: 'translateY(0)', opacity: 1 },
-      { transform: `translateY(-400px) translateX(${(Math.random() - 0.5) * 200}px)`, opacity: 1 }
+      { transform: 'translateY(-400px)', opacity: 1 }
     ],
     { duration: 800, easing: 'ease-out' }
   );
