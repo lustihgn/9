@@ -1,6 +1,7 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+// Điều chỉnh kích thước canvas khi thay đổi kích thước cửa sổ
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -75,7 +76,7 @@ class Particle {
     }
 
     draw() {
-        ctx.fillStyle = `rgba(255,${Math.random()*200},0,${this.life/60})`;
+        ctx.fillStyle = `rgba(255,${Math.random() * 200},0,${this.life / 60})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
         ctx.fill();
