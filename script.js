@@ -40,7 +40,7 @@ function launchFirework(launcher) {
   // Hiển thị ảnh sau khi pháo nổ
   setTimeout(() => {
     firework.remove();
-    explode(x, y);
+    explode(x, y); // Nổ tại trụ mà không bay ra ngoài viền màn hình
     showImage(x, y, launcher.dataset.img);
   }, 800);
 }
@@ -54,18 +54,18 @@ function explode(x, y) {
 
   const colors = ["#ff3c3c", "#ffd93c", "#4ef037", "#3cf0ff", "#ff3cf0"];
 
-  // Tạo các hạt nổ
+  // Tạo các hạt nổ phát tán từ trụ mà không ra ngoài
   for (let i = 0; i < 80; i++) {
     const particle = document.createElement("div");
     particle.className = "sparkle";
     particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.left = `${x + Math.random() * 20 - 10}px`; // tạo vị trí ngẫu nhiên x
-    particle.style.top = `${y + Math.random() * 20 - 10}px`;  // tạo vị trí ngẫu nhiên y
+    particle.style.left = `${x + Math.random() * 20 - 10}px`; // tạo vị trí ngẫu nhiên x trong phạm vi trụ
+    particle.style.top = `${y + Math.random() * 20 - 10}px`;  // tạo vị trí ngẫu nhiên y trong phạm vi trụ
 
     document.body.appendChild(particle);
 
     const angle = Math.random() * 2 * Math.PI;
-    const distance = Math.random() * 200;
+    const distance = Math.random() * 150; // Giới hạn khoảng cách nổ trong phạm vi màn hình
 
     particle.animate(
       [
