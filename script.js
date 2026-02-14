@@ -84,7 +84,8 @@ class Particle {
 }
 
 function explode(x, y) {
-    for (let i = 0; i < 80; i++) {
+    const numParticles = 50; // Giảm số lượng hạt để cải thiện hiệu suất
+    for (let i = 0; i < numParticles; i++) {
         particles.push(new Particle(x, y));
     }
 }
@@ -96,16 +97,26 @@ class PixelReveal {
         this.y = y;
         this.scale = 0;
 
-        // Mảng chứa 15 hình ảnh (anh1.jpg đến anh15.jpg)
         this.images = [];
-        for (let i = 1; i <= 15; i++) {
-            let img = new Image();
-            img.src = `images/anh${i}.jpg`;  // Đường dẫn đến các hình ảnh
-            this.images.push(img);
-        }
+        let loadedImagesCount = 0;
+        const totalImages = 15;
 
-        // Chọn ngẫu nhiên 1 hình ảnh
-        this.img = this.images[Math.floor(Math.random() * this.images.length)];
+        // Đảm bảo tất cả ảnh được tải trước khi sử dụng
+        for (let i = 1; i <= totalImages; i++) {
+            let img = new Image();
+            img.src = `images/anh${i}.jpg`; // Đường dẫn đến các hình ảnh
+
+            // Khi ảnh tải xong, tăng bộ đếm
+            img.onload = () => {
+                loadedImagesCount++;
+                if (loadedImagesCount === totalImages) {
+                    // Nếu tất cả ảnh đã được tải xong, tiếp tục
+                    this.img = this.images[Math.floor(Math.random() * this.images.length)];
+                }
+            };
+
+            this.images.push(img); // Thêm ảnh vào mảng
+        }
     }
 
     update() {
@@ -113,6 +124,7 @@ class PixelReveal {
     }
 
     draw() {
+        if (!this.img) return; // Nếu ảnh chưa tải xong, không vẽ gì
         const size = 220 * this.scale;
         const pixel = 8;
 
@@ -147,6 +159,7 @@ const fireworks = [];
 const particles = [];
 const reveals = [];
 
+// Vẽ các hiệu ứng lên canvas
 function animate() {
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -162,13 +175,17 @@ function animate() {
     fireworks.forEach((f, i) => {
         f.update();
         f.draw();
-        if (f.exploded) fireworks.splice(i, 1);
+        if (f.exploded && f.trail.length === 0) {
+            fireworks.splice(i, 1); // Xóa pháo hoa khi đã nổ xong
+        }
     });
 
     particles.forEach((p, i) => {
         p.update();
         p.draw();
-        if (p.life <= 0) particles.splice(i, 1);
+        if (p.life <= 0) {
+            particles.splice(i, 1); // Xóa hạt khi hết đời
+        }
     });
 
     reveals.forEach(r => {
